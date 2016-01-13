@@ -1,0 +1,9 @@
+*.~
+*~
+*.un~
+*.un
+*.swap*
+#executable
+*.out
+*.o
+build
