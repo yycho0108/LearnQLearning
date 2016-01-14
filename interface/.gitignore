@@ -1,0 +1,15 @@
+#Swap
+*.~
+*~
+*.un~
+*.un
+*.swp*
+
+#Executables
+build
+*.out
+*.o
+main
+
+#record
+*.txt
