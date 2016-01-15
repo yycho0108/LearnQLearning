@@ -14,9 +14,9 @@ size_t Q_TYPE::ID() const{
 	return s.ID() ^ a.ID();
 }
 size_t Q_TYPE::hash(){
-	return const_cast<TicTacToeState&>(next()).hash();
-	//return const_cast<TicTacToeState&>(s).hash() ^
-	//	const_cast<TicTacToeState&>(next()).hash();
+	//return const_cast<TicTacToeState&>(next()).hash();
+	return const_cast<TicTacToeState&>(s).hash() ^
+		const_cast<TicTacToeState&>(_next).hash();
 }
 const TicTacToeState& Q_TYPE::S() const{
 	return s;
@@ -32,16 +32,19 @@ bool Q_TYPE::operator==(const Q_TYPE& other) const{
 
 	//compares equal for rot & sym
 	auto& n = const_cast<TicTacToeState&>(next());
+	auto& ss = const_cast<TicTacToeState&>(s);
 	for(int i=0;i<4;++i){
-		if(n == other.next())
+		if(n == other.next() && s == other.s)
 			return true;
 		n.rotate();
+		ss.rotate();
 	}
 	n.flip();
 	for(int i=0;i<4;++i){
-		if(n == other.next())
+		if(n == other.next() && s == other.s)
 			return true;
 		n.rotate();
+		ss.rotate();
 	}
 	n.flip(); //now all is as it was before!
 	//next().flip();
@@ -67,11 +70,11 @@ void TicTacToeQ::advance(){
 void TicTacToeQ::print(){
 	std::cout << "--- ---" << std::endl;
 	std::unordered_map<TicTacToeState, std::pair<TicTacToeAction,double>> m;
-	std::unordered_map<TicTacToeState,int> visit;
+	std::unordered_map<TicTacToeState,std::vector<TicTacToeAction>> visit;
 	for(auto& qh : qHat){
 		auto& s = qh.first.S();
-		++visit[s];
 		auto& a = qh.first.A();
+		visit[s].push_back(a);
 		
 		if(m.find(s) == m.end())
 			m.insert(std::make_pair(s,std::pair<TicTacToeAction,double>(a,-1.0)));
@@ -81,23 +84,27 @@ void TicTacToeQ::print(){
 			loc.first = a;
 			loc.second = qh.second;
 		}
-		s.print(const_cast<TicTacToeAction&>(a));
-		auto& v = qh.second;
-		std::cout << "WEIGHT : " << v << std::endl;
+		//s.print(const_cast<TicTacToeAction&>(a));
+		//auto& v = qh.second;
+		//std::cout << "WEIGHT : " << v << std::endl;
 		//a.print();
 		//s.print();
 	}
 
-	for(auto& elem : visit){
-		if(elem.second != elem.first.empty()){
+/*	for(auto& elem : visit){
+		if((int)elem.second.size() != elem.first.empty()){
 			std::cout << "EMPTY : " << elem.first.empty() << ',';
 			std::cout << "NEXT : " << elem.first.next().size() << ',';
-			std::cout << "VISITED : " << elem.second << std::endl;
-			elem.first.print();
+			std::cout << "VISITED : " << elem.second.size() << std::endl;
+			for(auto& a : elem.second){
+				elem.first.print(a);
+			}
 			char c;
 			std::cin >> c;
 		}
 	}
+
+	*/
 	std::cout << "<REPORT> " << std::endl;
 	for(auto& elem : m){
 		auto& s = elem.first;
@@ -128,7 +135,8 @@ double TicTacToeQ::max(const TicTacToeState& s){
 		return 0;
 	auto res = 99999.0; //a very high value
 	//assert(s.next().size() > 0);
-	for(auto a : s.next()){ //next action
+	auto v = s.next();
+	for(auto &a : v){ //iterate over next action
 		auto tmpQ = Q_TYPE(s,a);
 		if(qHat.find(tmpQ) == qHat.end()){
 			qHat[tmpQ] = f();
@@ -150,8 +158,8 @@ void TicTacToeQ::init(int height, int width){
 			qHat[Q_TYPE(TicTacToeState(),TicTacToeAction(i,j))] = f();
 		}
 	}
-	std::cout << qHat.size() << std::endl;
-	print();
+	//std::cout << qHat.size() << std::endl;
+	//print();
 }
 size_t TicTacToeQ::size() const{
 	return qHat.size();

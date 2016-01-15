@@ -9,7 +9,7 @@ int main(int argc, char* argv[]){
 	TicTacToeQ q;
 	q.init(3,3); //board size
 	for(int i=0;i<MAX_ITER;++i){
-		std::cout << i << std::endl;
+		std::cerr << i << std::endl; //progress report;
 		q.advance();
 		//q.print();
 	}
