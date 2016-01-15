@@ -13,8 +13,10 @@ Q_TYPE::Q_TYPE(TicTacToeState s,TicTacToeAction a)
 size_t Q_TYPE::ID() const{
 	return s.ID() ^ a.ID();
 }
-size_t Q_TYPE::hash() const{
-	return s.hash() ^ next().hash();
+size_t Q_TYPE::hash(){
+	return const_cast<TicTacToeState&>(next()).hash();
+	//return const_cast<TicTacToeState&>(s).hash() ^
+	//	const_cast<TicTacToeState&>(next()).hash();
 }
 const TicTacToeState& Q_TYPE::S() const{
 	return s;
@@ -27,6 +29,7 @@ const TicTacToeState& Q_TYPE::next() const{
 }
 
 bool Q_TYPE::operator==(const Q_TYPE& other) const{
+
 	//compares equal for rot & sym
 	auto& n = const_cast<TicTacToeState&>(next());
 	for(int i=0;i<4;++i){
@@ -42,6 +45,7 @@ bool Q_TYPE::operator==(const Q_TYPE& other) const{
 	}
 	n.flip(); //now all is as it was before!
 	//next().flip();
+	//std::cout << "FALSE! NOT SAME!" << std::endl;
 	return false;
 }
 
@@ -63,9 +67,10 @@ void TicTacToeQ::advance(){
 void TicTacToeQ::print(){
 	std::cout << "--- ---" << std::endl;
 	std::unordered_map<TicTacToeState, std::pair<TicTacToeAction,double>> m;
-
+	std::unordered_map<TicTacToeState,int> visit;
 	for(auto& qh : qHat){
 		auto& s = qh.first.S();
+		++visit[s];
 		auto& a = qh.first.A();
 		
 		if(m.find(s) == m.end())
@@ -76,11 +81,24 @@ void TicTacToeQ::print(){
 			loc.first = a;
 			loc.second = qh.second;
 		}
-		//s.next(a).print();
+		s.print(const_cast<TicTacToeAction&>(a));
+		auto& v = qh.second;
+		std::cout << "WEIGHT : " << v << std::endl;
 		//a.print();
 		//s.print();
 	}
 
+	for(auto& elem : visit){
+		if(elem.second != elem.first.empty()){
+			std::cout << "EMPTY : " << elem.first.empty() << ',';
+			std::cout << "NEXT : " << elem.first.next().size() << ',';
+			std::cout << "VISITED : " << elem.second << std::endl;
+			elem.first.print();
+			char c;
+			std::cin >> c;
+		}
+	}
+	std::cout << "<REPORT> " << std::endl;
 	for(auto& elem : m){
 		auto& s = elem.first;
 		auto& a = elem.second.first;
@@ -99,41 +117,26 @@ void TicTacToeQ::print(){
 }
 
 double TicTacToeQ::alpha(const Q_TYPE& q){
-	//return 0.4; //WELL...
+	//return 0.2;
 	auto v = ++visit[q];
-	//std::cout << visit[q] << std::endl;
-	//int t = ++(visit[q]);
-	//visit[q] = 1;
 	return 1.0 / pow(v+1,0.85);
 }
 
 //try to maximize profit by "minimizing loss"
-//--> now modified to look two steps ahead.
 double TicTacToeQ::max(const TicTacToeState& s){
 	if(s.next().size() == 0) //nothing after.
 		return 0;
-	else if(s.next().size() == 1)
-		return s.next(s.next().front()).reward();
-	auto res = -99999.0; //a very high value
+	auto res = 99999.0; //a very high value
 	//assert(s.next().size() > 0);
 	for(auto a : s.next()){ //next action
-		auto s_next = s.next(a);
-		for(auto a_next : s_next.next()){
-			auto tmpQ = Q_TYPE(s_next,a_next);
-			if(qHat.find(tmpQ) == qHat.end())
-				qHat[tmpQ] = f();
-			auto tmp = qHat[tmpQ];
-			res = res>tmp?res:tmp;
+		auto tmpQ = Q_TYPE(s,a);
+		if(qHat.find(tmpQ) == qHat.end()){
+			qHat[tmpQ] = f();
 		}
-
-		//auto tmpQ = Q_TYPE(s,a);
-		//if(qHat.find(tmpQ) == qHat.end()){
-		//	qHat[tmpQ] = f();
-		//}
-		//auto tmp = qHat[tmpQ];
-		//res = res>tmp?res:tmp; //maximize my profit
+		auto tmp = qHat[tmpQ];
+		res = res<tmp?res:tmp; //maximize my profit by minimizing loss
 	}
-	return res; // maximum profit for s
+	return -res; // maximum profit for s
 }
 
 void TicTacToeQ::init(int height, int width){

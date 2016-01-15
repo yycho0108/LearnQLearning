@@ -7,7 +7,8 @@
 
 class State{
 	public:
-		using ID_TYPE = std::size_t;
+		//use size_t? well..
+		using ID_TYPE = int;
 		//State();
 		//virtual ID_TYPE ID() const=0; //unique ID of state
 		//virtual double reward()=0;

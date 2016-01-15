@@ -48,18 +48,41 @@ TicTacToeState::ID_TYPE Trait::ID() const{ // unique ID
 		}
 	return res;	
 }
-
-TicTacToeState::ID_TYPE Trait::hash() const{
+void Trait::initHash(){
 	auto& board = *this;
 	ID_TYPE C = board[0] + board[width-1] + board[(height-1)*width] + board[(height*width)-1];
 	C <<= 3;
-	ID_TYPE M = board[1*width + 1]; // just for now
 	ID_TYPE S = board[1] + board[1*width] + board[2*width-1] + board[2*width+1];
 	S <<= 6;
+	ID_TYPE M = board[1*width + 1]; // just for now
+	_hash = ((17*M + S)*31+C)+7;
+	//_hash = 1;
+}
+
+TicTacToeState::ID_TYPE Trait::hash(){
+	if(_hash==0){
+		initHash();
+		//const_cast<Trait&>(*this).initHash();
+		//initializeHash()
+	}
+	//auto& board = *this;
+	return _hash;
+	//ID_TYPE res=0;
+	//for(auto& c : board){
+	//	res *= (c+2);
+	//}
+	//
+	
+	//ID_TYPE C = board[0] + board[width-1] + board[(height-1)*width] + board[(height*width)-1];
+	//C <<= 3;
+	//ID_TYPE M = board[1*width + 1]; // just for now
+//	ID_TYPE S = board[1] + board[1*width] + board[2*width-1] + board[2*width+1];
+//	S <<= 6;
 	//auto res = M^(C+39)^(S+91);
 	//std::cout << res << std::endl;
-	return M^(C+39)^(S+91);
+//	return M^(C+39)^(S+91);
 	//return C^(M<<3)^(S<<6);
+//	return res;
 }
 
 bool Trait::operator==(const Trait& t){
@@ -83,7 +106,7 @@ void Trait::rotate(){
 	flip();
 }
 
-enum TicTacToeState::Cell : char{EMPTY,O,X};
+enum TicTacToeState::Cell : char{EMPTY=1,O,X};
 using Cell = TicTacToeState::Cell;
 
 Cell Trait::checkHorz(int i) const{
@@ -179,10 +202,10 @@ void TicTacToeState::setSize(int w, int h){
 TicTacToeState::TicTacToeState()
 {
 	done = false;
-	empty = height*width;
+	_empty = height*width;
 	for(int i=0;i<height;++i){
 		for(int j=0;j<width;++j){
-			board.push_back(EMPTY); //empty
+			board.push_back(EMPTY); //_empty
 		}
 	}
 	turn = O; //default : O Starts First
@@ -196,13 +219,13 @@ TicTacToeState::TicTacToeState()
 	//if(f() < 0.5){
 	//	randomMove(turn); // = Opponent played first
 	//	turn = X;
-	//	--empty;
+	//	--_empty;
 	//}
 }
 TicTacToeState::TicTacToeState(const TicTacToeState& prev, TicTacToeAction a)
 :board(prev.board),
 _next(prev._next),
-empty(prev.empty -1),
+_empty(prev._empty -1),
 done(prev.done){
 	auto id = a.ID();
 	auto i = id / width;
@@ -215,7 +238,7 @@ done(prev.done){
 	_next.erase(it);	
 	/* *** OPPONENT MAKES A MOVE *** */ // --> Currently Inactive
 	
-	//if(empty >0){
+	//if(_empty >0){
 	//	//turn = (prev.turn==X)?O:X;
 	//	auto t = (prev.turn == X)?O:X;
 	//	randomMove(t);
@@ -231,12 +254,12 @@ done(prev.done){
 }
 
 TicTacToeState::TicTacToeState(const TicTacToeState& t)
-:turn(t.turn),board(t.board),_next(t._next),empty(t.empty),done(t.done){
+:turn(t.turn),board(t.board),_next(t._next),_empty(t._empty),done(t.done){
 
 }
 
 //TicTacToeState::TicTacToeState(TicTacToeState&& t)
-//:turn(t.turn),board(t.board),_next(t._next),empty(t.empty),done(t.done){
+//:turn(t.turn),board(t.board),_next(t._next),_empty(t._empty),done(t.done){
 //}
 
 void TicTacToeState::computeNext(){
@@ -331,7 +354,7 @@ TicTacToeState::ID_TYPE TicTacToeState::ID() const{
 	return board.ID();
 
 }
-TicTacToeState::ID_TYPE TicTacToeState::hash() const{
+TicTacToeState::ID_TYPE TicTacToeState::hash(){
 	return board.hash();
 	/*
 	 *
@@ -360,7 +383,7 @@ void TicTacToeState::randomMove(Cell t){
 	std::random_shuffle(_next.begin(),_next.end());
 	auto a = _next.back();
 	board[a.ID()] = t;
-	--empty;
+	--_empty;
 	_next.pop_back();
 }
 
@@ -380,4 +403,8 @@ void TicTacToeState::flip(){
 
 void TicTacToeState::rotate(){
 	board.rotate();
+}
+
+int TicTacToeState::empty() const{
+	return _empty;
 }

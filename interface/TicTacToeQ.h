@@ -12,7 +12,7 @@ struct Q_TYPE{
 	bool operator==(const Q_TYPE& other) const;
 	Q_TYPE(TicTacToeState,TicTacToeAction);
 	size_t ID() const;
-	size_t hash() const;
+	size_t hash();
 	const TicTacToeState& S() const;
 	const TicTacToeAction& A() const;
 	const TicTacToeState& next() const;
@@ -24,7 +24,7 @@ namespace std{
 	struct hash<Q_TYPE>
 	{
 		size_t operator()(const Q_TYPE& x) const{
-			return x.hash();
+			return const_cast<Q_TYPE&>(x).hash();
 		}
 	};
 }

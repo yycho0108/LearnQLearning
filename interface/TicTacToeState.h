@@ -30,7 +30,9 @@ class TicTacToeState : public ModelFreeState{
 		struct Trait : public std::vector<Cell>{
 			bool operator==(const Trait& t);
 			ID_TYPE ID() const;
-			ID_TYPE hash() const;
+			ID_TYPE hash();
+			ID_TYPE _hash = 0;
+			void initHash();
 			void flip();
 			void rotate();
 			void transpose();
@@ -49,7 +51,7 @@ class TicTacToeState : public ModelFreeState{
 		Cell turn;
 		Trait board; //Trait = unique identifier
 		std::vector<TicTacToeAction> _next;
-		int empty; //Convenience
+		int _empty; //Convenience
 		bool done;
 		double _reward;
 	public:
@@ -62,7 +64,7 @@ class TicTacToeState : public ModelFreeState{
 		bool isMiddle(int i, int j) const;
 		*/
 		virtual ID_TYPE ID() const;
-		virtual ID_TYPE hash() const;
+		virtual ID_TYPE hash();
 		virtual double reward();
 		virtual double reward(TicTacToeAction a);
 		//virtual double reward(Action a, TicTacToeState& s);
@@ -72,10 +74,11 @@ class TicTacToeState : public ModelFreeState{
 		virtual TicTacToeState next(TicTacToeAction) const;
 		virtual bool operator==(const TicTacToeState& s) const;
 		//Utility
+		
+		int empty() const;
 		void randomMove(Cell t);
 		void print() const;
-		void print(TicTacToeAction& a) const;
-		
+		void print(TicTacToeAction& a) const;	
 		void flip();
 		void rotate();
 };
