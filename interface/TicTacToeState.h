@@ -34,6 +34,11 @@ class TicTacToeState : public ModelFreeState{
 			void flip();
 			void rotate();
 			void transpose();
+			void print() const;
+			void print(TicTacToeAction& a) const;
+			Cell checkHorz(int i) const;
+			Cell checkVert(int j) const;
+			Cell checkDiag(bool rise) const;
 		};
 		//using Trait = std::vector<Cell>;
 	/* *** STATIC *** */
@@ -46,23 +51,22 @@ class TicTacToeState : public ModelFreeState{
 		std::vector<TicTacToeAction> _next;
 		int empty; //Convenience
 		bool done;
-	private:
-		Cell checkHorz(int i);
-		Cell checkVert(int j);
-		Cell checkDiag(bool rise);
+		double _reward;
 	public:
 		TicTacToeState();
 		TicTacToeState(const TicTacToeState& prev, TicTacToeAction a);
 		TicTacToeState(const TicTacToeState& t);
-		//TicTacToeState(const TicTacToeState&& t);
+		/*
 		bool isCorner(int i, int j) const;
 		bool isSide(int i, int j) const;
 		bool isMiddle(int i, int j) const;
+		*/
 		virtual ID_TYPE ID() const;
 		virtual ID_TYPE hash() const;
 		virtual double reward();
 		virtual double reward(TicTacToeAction a);
 		//virtual double reward(Action a, TicTacToeState& s);
+		virtual void computeReward();
 		virtual void computeNext();
 		virtual std::vector<TicTacToeAction> next() const;
 		virtual TicTacToeState next(TicTacToeAction) const;
@@ -70,6 +74,7 @@ class TicTacToeState : public ModelFreeState{
 		//Utility
 		void randomMove(Cell t);
 		void print() const;
+		void print(TicTacToeAction& a) const;
 		
 		void flip();
 		void rotate();
@@ -77,8 +82,8 @@ class TicTacToeState : public ModelFreeState{
 
 
 
-/*
- * namespace std{
+
+namespace std{
 	template<>
 	struct hash<TicTacToeState>
 	{
@@ -87,7 +92,7 @@ class TicTacToeState : public ModelFreeState{
 		}
 	};
 }
-*/
+
 
 namespace std{
 	template<>

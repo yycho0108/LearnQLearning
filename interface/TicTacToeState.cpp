@@ -33,7 +33,7 @@ bool TicTacToeAction::operator==(const TicTacToeAction& a) const{
 }
 
 void TicTacToeAction::print() const{
-	std::cout << "(i:" << (_ID/width) << "j:" << (_ID%width) << ")" << std::endl;
+	std::cout << "(i:" << (_ID/width) << ", j:" << (_ID%width) << ")" << std::endl;
 }
 
 /* *** TicTacToeState *** */
@@ -50,7 +50,6 @@ TicTacToeState::ID_TYPE Trait::ID() const{ // unique ID
 }
 
 TicTacToeState::ID_TYPE Trait::hash() const{
-	//well.. if larger than 3*3, this will become harder...
 	auto& board = *this;
 	ID_TYPE C = board[0] + board[width-1] + board[(height-1)*width] + board[(height*width)-1];
 	C <<= 3;
@@ -83,11 +82,94 @@ void Trait::rotate(){
 	transpose();
 	flip();
 }
+
+enum TicTacToeState::Cell : char{EMPTY,O,X};
+using Cell = TicTacToeState::Cell;
+
+Cell Trait::checkHorz(int i) const{
+	auto& board = *this;
+	auto ref = board[i*width]; // j =0;
+	for(int j=1;j<width;++j){
+		if(board[i*width + j] != ref)
+			return EMPTY;
+	}
+	return ref;
+}
+Cell Trait::checkVert(int j) const{
+	auto& board = *this;
+	auto ref = board[j]; //i=0;
+	for(int i=1;i<height;++i){
+		if(board[i*width +j] !=ref)
+			return EMPTY;
+	}
+	return ref;
+}
+Cell Trait::checkDiag(bool rise) const{
+	auto& board = *this;
+	if(rise){
+		auto i = height - 1;
+		auto j = 0;
+		auto ref = board[i*width+j]; //bottom left
+		while(j < width){
+			if(board[i*width+j] != ref)
+				return EMPTY;
+			++j, --i;
+		}
+		return ref;
+	}else{
+		auto i = 0, j = 0;
+		auto ref = board[i*width+j];
+		while(j < width){
+			if(board[i*width+j] != ref)
+				return EMPTY;
+			++j, ++i;
+		}
+		return ref;
+	}
+	return EMPTY;
+}
+void Trait::print() const{
+	auto& board = *this;
+	for(int i=0; i<height; ++i){
+		for(int j=0; j<width; ++j){
+			switch(board[i*width+j]){
+				case EMPTY:
+					putchar('-');
+					break;
+				case O:
+					putchar('O');
+					break;
+				case X:
+					putchar('X');
+					break;
+			}
+		}
+		std::cout << std::endl;
+	}
+}
+void Trait::print(TicTacToeAction& a) const{
+	auto& board = *this;
+	for(int i=0; i<height; ++i){
+		for(int j=0; j<width; ++j){
+			switch(board[i*width+j]){
+				case EMPTY:
+					putchar(a.ID()==(unsigned long)i*width+j?'*':'-');
+					break;
+				case O:
+					putchar('O');
+					break;
+				case X:
+					putchar('X');
+					break;
+
+			}
+		}
+		std::cout << std::endl;
+	}
+}
 //
 int TicTacToeState::width;
 int TicTacToeState::height;
-enum TicTacToeState::Cell : char{EMPTY,O,X};
-using Cell = TicTacToeState::Cell;
 
 void TicTacToeState::setSize(int w, int h){
 	width = w;
@@ -131,17 +213,21 @@ done(prev.done){
 	auto it = std::find(_next.begin(),_next.end(),a); //where action occurs
 	assert(it != _next.end());
 	_next.erase(it);	
-	/* *** OPPONENT MAKES A MOVE *** */
-	if(empty >0){
-		//turn = (prev.turn==X)?O:X;
-		auto t = (prev.turn == X)?O:X;
-		randomMove(t);
-		--empty;
-	}
-	turn = prev.turn; //flip twice
-	//if (_next.size() == 0)
-	//   done = true;
+	/* *** OPPONENT MAKES A MOVE *** */ // --> Currently Inactive
+	
+	//if(empty >0){
+	//	//turn = (prev.turn==X)?O:X;
+	//	auto t = (prev.turn == X)?O:X;
+	//	randomMove(t);
+	//}
+	turn = (prev.turn==X?O:X); //flip state.
+	
+	computeReward();
+	if(done)
+		_next.clear();
 	//computeNext();
+	if (_next.size() == 0) //well..circular. whatever
+	   done = true;
 }
 
 TicTacToeState::TicTacToeState(const TicTacToeState& t)
@@ -165,76 +251,57 @@ void TicTacToeState::computeNext(){
 	}
 
 }
-Cell TicTacToeState::checkHorz(int i){
-	auto ref = board[i*width]; // j =0;
-	for(int j=1;j<width;++j){
-		if(board[i*width + j] != ref)
-			return EMPTY;
-	}
-	return ref;
-}
-Cell TicTacToeState::checkVert(int j){
-	auto ref = board[j]; //i=0;
-	for(int i=1;i<height;++i){
-		if(board[i*width +j] !=ref)
-			return EMPTY;
-	}
-	return ref;
-}
-Cell TicTacToeState::checkDiag(bool rise){
-	if(rise){
-		auto i = height - 1;
-		auto j = 0;
-		auto ref = board[i*width+j]; //bottom left
-		while(j < width){
-			if(board[i*width+j] != ref)
-				return EMPTY;
-			++j, --i;
-		}
-		return ref;
-	}else{
-		auto i = 0, j = 0;
-		auto ref = board[i*width+j];
-		while(j < width){
-			if(board[i*width+j] != ref)
-				return EMPTY;
-			++j, ++i;
-		}
-		return ref;
-	}
-	return EMPTY;
-}
-double TicTacToeState::reward(){
-	done = true;
-	std::vector<TicTacToeAction> v;
-	_next.swap(v);
+
+void TicTacToeState::computeReward(){
+	//done = true;
+	//std::vector<TicTacToeAction> v;
+	//_next.swap(v);
 	
 	//CHECK
+	//
+	done = true;
 	for(int i=0;i<height;++i){
-		auto tmp = checkHorz(i);
-		if(tmp != EMPTY)
-			return tmp==turn?1.0 : -1.0; // is my "TURN" what I win for? hmm... I guess.	
+		auto tmp = board.checkHorz(i);
+		if(tmp != EMPTY){
+			_reward = (tmp==turn)?1.0:-1.0;
+			return;
+		}
 	}
 	for(int j=0;j<width;++j){
-		auto tmp = checkVert(j);
-		if(tmp != EMPTY)
-			return tmp==turn?1.0:-1.0;
+		auto tmp = board.checkVert(j);
+		if(tmp != EMPTY){
+			_reward = (tmp==turn)?1.0:-1.0;
+			return;
+		}
 	}
-	auto tmp = checkDiag(true);
-	if(tmp != EMPTY)
-		return tmp == turn? 1.0 : -1.0;
-	tmp = checkDiag(false);
-	if(tmp != EMPTY)
-		return tmp == turn? 1.0 : -1.0;
-	
-	_next.swap(v);
+	auto tmp = board.checkDiag(true);
+	if(tmp != EMPTY){
+		_reward = (tmp==turn)?1.0:-1.0;
+		return;
+	}
+	tmp = board.checkDiag(false);
+	if(tmp != EMPTY){
+		_reward = (tmp==turn)?1.0:-1.0;
+		return;
+	}
+
+	_reward = 0.0;
 	done = false;
-	return 0.0;
+	return;	
+	//_next.swap(v);
+	//done = false;
+	//return 0.0;
 	//examine state
 }
-
+double TicTacToeState::reward(){
+	return _reward;
+}
 double TicTacToeState::reward(TicTacToeAction a){
-	return next(a).reward();
+	//print(a); //test : verified.
+	//auto tmp = -next(a).reward();
+	//std::cout << '[' << tmp << ']' << std::endl;
+	//return tmp;
+	return -next(a).reward(); //negate since next is opponent's turn.
 }
 
 std::vector<TicTacToeAction> TicTacToeState::next() const{
@@ -245,7 +312,7 @@ TicTacToeState TicTacToeState::next(TicTacToeAction a) const{
 	return TicTacToeState(*this,a);
 }
 
-bool TicTacToeState::isCorner(int i, int j) const{
+/*bool TicTacToeState::isCorner(int i, int j) const{
 	return (i==0 && j==0)
 		|| (i==0 && j+1==width)
 		|| (i+1==height && j==0)
@@ -258,7 +325,7 @@ bool TicTacToeState::isSide(int i, int j) const{
 
 bool TicTacToeState::isMiddle(int i, int j) const{
 	return 0<i && 0<j && i+1<height && j+1<width;
-}
+}*/
 
 TicTacToeState::ID_TYPE TicTacToeState::ID() const{
 	return board.ID();
@@ -293,6 +360,7 @@ void TicTacToeState::randomMove(Cell t){
 	std::random_shuffle(_next.begin(),_next.end());
 	auto a = _next.back();
 	board[a.ID()] = t;
+	--empty;
 	_next.pop_back();
 }
 
@@ -301,25 +369,11 @@ bool TicTacToeState::operator==(const TicTacToeState& s) const{
 }
 
 void TicTacToeState::print() const{
-	for(int i=0; i<height; ++i){
-		for(int j=0; j<width; ++j){
-			switch(board[i*width+j]){
-				case EMPTY:
-					putchar('-');
-					break;
-				case O:
-					putchar('O');
-					break;
-				case X:
-					putchar('X');
-					break;
-			}
-		}
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
+	board.print();
 }
-
+void TicTacToeState::print(TicTacToeAction& a) const{
+	board.print(a);
+}
 void TicTacToeState::flip(){
 	board.flip();
 }
