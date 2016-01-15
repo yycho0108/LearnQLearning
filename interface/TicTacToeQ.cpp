@@ -84,9 +84,9 @@ void TicTacToeQ::print(){
 			loc.first = a;
 			loc.second = qh.second;
 		}
-		//s.print(const_cast<TicTacToeAction&>(a));
-		//auto& v = qh.second;
-		//std::cout << "WEIGHT : " << v << std::endl;
+		s.print(const_cast<TicTacToeAction&>(a));
+		auto& v = qh.second;
+		std::cout << "WEIGHT : " << v << std::endl;
 		//a.print();
 		//s.print();
 	}
@@ -131,9 +131,12 @@ double TicTacToeQ::alpha(const Q_TYPE& q){
 
 //try to maximize profit by "minimizing loss"
 double TicTacToeQ::max(const TicTacToeState& s){
+	//PERHAPS to 'PROCEED OPTIMALLY' res should still be the mamximum of the rest?
+	//although its value is still negated,
+	//the maximum only reflects that such a choice is POSSIBLE for the opponent!!
 	if(s.next().size() == 0) //nothing after.
 		return 0;
-	auto res = 99999.0; //a very high value
+	auto res = -99999.0; //a very high value
 	//assert(s.next().size() > 0);
 	auto v = s.next();
 	for(auto &a : v){ //iterate over next action
@@ -142,7 +145,7 @@ double TicTacToeQ::max(const TicTacToeState& s){
 			qHat[tmpQ] = f();
 		}
 		auto tmp = qHat[tmpQ];
-		res = res<tmp?res:tmp; //maximize my profit by minimizing loss
+		res = res>tmp?res:tmp; //maximize my profit by minimizing loss
 	}
 	return -res; // maximum profit for s
 }
