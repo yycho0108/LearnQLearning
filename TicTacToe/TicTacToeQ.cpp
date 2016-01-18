@@ -40,6 +40,7 @@ bool Q_TYPE::operator==(const Q_TYPE& other) const{
 		ss.rotate();
 	}
 	n.flip();
+	ss.flip();
 	for(int i=0;i<4;++i){
 		if(n == other.next() && s == other.s)
 			return true;

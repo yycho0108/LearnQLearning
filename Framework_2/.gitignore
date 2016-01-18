@@ -1,0 +1,13 @@
+#swap
+*.swp*
+*.~
+*~
+*.un*
+
+#archive
+record
+
+#executable
+build
+*.out
+*.o
