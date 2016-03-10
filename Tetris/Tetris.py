@@ -106,8 +106,8 @@ class Block:
         #print(left,right)
         #return left,right
     def summary(self):
-        return [(1.0 if i == self.t else 0.0) for i in range(7)]
-        #return [self.t/7.0]
+        #return [(1.0 if i == self.t else 0.0) for i in range(7)]
+        return [self.t/7.0]
 
 class Board:
     def __init__(self,w,h):
@@ -167,8 +167,21 @@ class Board:
             if self.board[i][col] != 0:
                 return self.h-i
         return 0
-    def summary(self):
-        return [self.getHighest(j) for j in range(self.w)]
+    def summary(self,axis=0):
+        if axis == None:
+            return [self.getHighest(j) for j in range(self.w)]
+        else:
+            l = max(axis,0)
+            r = min(axis+4,self.w)
+            #print(l,r)
+            res = [self.getHighest(j) for j in range(l,r)]
+
+            if axis < 0:
+                res = [self.h for _ in range(abs(axis))] + res
+            elif axis+4 > self.w:
+                res = res + [self.h for _ in range(abs(axis+4-self.w))]
+            #print(res)
+            return res
 
 class Tetris:
     def __init__(self,w,h):

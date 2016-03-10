@@ -40,7 +40,9 @@ class TetrisState(State):
         else:
             self.board = prev.board + prev.block
             self.block = prev.nextBlock
-            self.reward = (.51*self.spaceEmpty() + .76*self.lineClear()) * scaleFactor #prev.reward + self.getReward()
+            var = np.var(self.board.summary())
+            self.reward = (.71*self.spaceEmpty() + .86*self.lineClear() - .2*var) * scaleFactor #prev.reward + self.getReward()
+            #print(self.reward)
         self.nextBlock = Block()
 
     def getActions(self):
@@ -51,15 +53,20 @@ class TetrisState(State):
         return TetrisState(self)
     def spaceEmpty(self): #first-pass reward model with Immediate Reward
             return (self.board.h - max(self.board.summary())) # lower height = better.
-    def summary(self):
+    def summary(self,axis=None):
         #board
-        s = self.board.summary()
+        if axis == None:
+            s = self.board.summary()
+        else:
+            s = self.board.summary(axis)
+        
         m = min(s)
         s = [float(h-m)/self.board.h for h in s]
         return s + self.nextBlock.summary() + self.block.summary()#block summary is just type.
+
     def lineClear(self):
         if self.board.over:
-            return -1
+            return -5
         else:
             c = self.board.check()
             #if c != 0:
@@ -74,8 +81,14 @@ class TetrisAction(Action):
     def __init__(self,rot,loc):
         self.rot = rot
         self.loc = loc
-    def summary(self):
-        return [(1.0 if self.rot==i else 0.0) for i in range(4)] + [(1.0 if self.loc==i else 0.0) for i in range(-3,W+3)]
+    def summary(self,axis=None):
+        rs = [(1.0 if self.rot==i else 0.0) for i in range(4)]#
+        ls = [(1.0 if self.loc==i else 0.0) for i in range(-3,W+3)]
+        if axis == None:
+            return rs+ls
+        else:
+            return rs
+
         #return [self.rot/3.0,self.loc/float(W)]
     def __repr__(self):
         return self.__str__()
@@ -95,44 +108,54 @@ class TetrisAgent(Agent):
         self.state = None
         #1 for block, 1 for nextblock, 2 for action(loc/rot of block)
         #8 for each height in board width, outputing 1 Q-value
-        I = len(TetrisState(shape=shape).summary() + TetrisAction(0,0).summary())
+        I = len(TetrisState(shape=shape).summary(0) + TetrisAction(0,0).summary(0)) 
+        print(I)
         t = [I,I/2,I/2,1]
         self.net = Net(t)
         print(self.net.W)
-    def chooseBest(self,s):
+    def chooseBest(self):
         actions = self.state.getActions()
+        s = None
         a = None 
-        maxQ = -50000 
+        q = -50000 
 
         #qList = []
         #aList = []
         for r,lr in enumerate(actions): #rotation
             #print(lr)
             for l in range(0-lr[0],self.w+lr[1]-3): #location(j)
-                _a = TetrisAction(r,l)
-                q = self.net.FF(s+_a.summary())
-                #qList += [q]
-                #print(q)
-                if q > maxQ:
-                    maxQ = q
+                #print("L",l)
+                _s = self.state.summary(l)
+                #print("S",_s)
+                _a = TetrisAction(r,l)# l now migrated into state-summary
+                #print("A",_a)
+                _q = self.net.FF(_s+_a.summary(l))
+                #print(_s)
+                #print(_q)
+                #qList += [(_s,_q)]
+                if _q > q:
+                    s = _s
+                    q = _q
                     a = _a
         #print('A:', a)
-        #print('Q:',maxQ)
-        return a,maxQ
+        #print('Q:',qList)
+        return s,a,q
 
-    def chooseRand(self,s):
+    def chooseRand(self):
         actions = self.state.getActions()
         r = np.random.randint(4)
         lr = actions[r]
         l = np.random.randint(0-lr[0],self.w + lr[1] - 3)
+        
+        s = self.state.summary(l)
         a = TetrisAction(r,l)
-        return a, self.net.FF(s+a.summary()) 
+        return s, a, self.net.FF(s+a.summary(l)) 
 
-    def chooseNext(self,s): #choose "best next state"
-        if np.random.random()<0.1:
-            return self.chooseRand(s)
+    def chooseNext(self): #choose "best next state"
+        if np.random.random()<0.3:
+            return self.chooseRand()
         else:
-            return self.chooseBest(s)
+            return self.chooseBest()
 
     def draw(self,screen):
         self.state.draw(screen)
@@ -145,15 +168,16 @@ class TetrisAgent(Agent):
             for event in pygame.event.get():
                 if event.type == QUIT:
                     return -1
-            s = self.state.summary()
-            a,u = self.chooseNext(s) #select action
+            #s = self.state.summary()
+            s,a,q = self.chooseNext() #select action
             #print(a.summary())
             self.state = self.state.next(a)
-            _,_u = self.chooseBest(s) #best of next
-            u2 = (1-ALPHA)*u + ALPHA*(self.state.reward + GAMMA*_u)
+            _,_,_q = self.chooseBest() #best of next
+            #print(_q)
+            q2 = (1-ALPHA)*q + ALPHA*(self.state.reward + GAMMA*_q)
             #if self.state.getReward() == -100:
             #    print("U:{}, U2:{}".format(u, u2))
-            self.net.BP(s+a.summary(),u2) #update Q value
+            self.net.BP(s+a.summary(0),q2) #update Q value
             if screen is not None:
                 self.draw(screen)
                 pygame.display.update()
@@ -172,8 +196,8 @@ if __name__ == "__main__":
     #    agent = pickle.load(f)
 
     scores = []
-    for i in range(10000):
-        score = agent.run()
+    for i in range(100):
+        score = agent.run(screen)
         if score == -1:
             break
         scores += [score]

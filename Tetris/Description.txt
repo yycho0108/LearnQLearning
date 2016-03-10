@@ -29,3 +29,10 @@ Agent :
  - State
  - Available Actions
  - Chooses Actions based on Q-Values
+
+
+- Reduce State Space By:
+:only considering 4.
+Q(S,A) = ...(action contains location info)
+= ... only need 4 numbers from S that are actually relevant!!
+
