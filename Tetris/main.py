@@ -7,6 +7,8 @@ from Tetris import *
 from Net import *
 import numpy as np
 
+import pickle
+
 from matplotlib import pyplot as plt
 
 ALPHA = 0.4
@@ -38,7 +40,7 @@ class TetrisState(State):
         else:
             self.board = prev.board + prev.block
             self.block = prev.nextBlock
-            self.reward = (self.spaceEmpty() + self.lineClear()) * scaleFactor #prev.reward + self.getReward()
+            self.reward = (.51*self.spaceEmpty() + .76*self.lineClear()) * scaleFactor #prev.reward + self.getReward()
         self.nextBlock = Block()
 
     def getActions(self):
@@ -60,8 +62,8 @@ class TetrisState(State):
             return -1
         else:
             c = self.board.check()
-            if c != 0:
-                print ("########JACKPOT!!#########")
+            #if c != 0:
+            #    print ("########JACKPOT!!#########")
             return 1 + 5*c 
     def done(self):
         return self.board.over
@@ -142,8 +144,7 @@ class TetrisAgent(Agent):
             epoch += 1
             for event in pygame.event.get():
                 if event.type == QUIT:
-                    pygame.quit()
-                    sys.exit()
+                    return -1
             s = self.state.summary()
             a,u = self.chooseNext(s) #select action
             #print(a.summary())
@@ -162,19 +163,27 @@ class TetrisAgent(Agent):
         return epoch 
 
 if __name__ == "__main__":
-    w,h = 8,20
+    w,h = 10,20
     pygame.init()
     screen = pygame.display.set_mode((w*50,h*50))
     pygame.display.set_caption('Tetris_AI')
     agent = TetrisAgent((w,h))
+    #with open('agent','r') as f:
+    #    agent = pickle.load(f)
+
     scores = []
     for i in range(10000):
         score = agent.run()
+        if score == -1:
+            break
         scores += [score]
         print("[{}] SCORE : {}".format(i,score))
         #raw_input("...")
     raw_input("...")
     agent.run(screen,500)
+    with open('agent','w') as f:
+        pickle.dump(agent,f)
+
     plt.plot(scores)
     plt.show()
 
