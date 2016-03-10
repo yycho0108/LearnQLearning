@@ -11,3 +11,5 @@ record
 build
 *.out
 *.o
+#output library
+lib

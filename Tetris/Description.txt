@@ -1,0 +1,31 @@
+==TETRIS==
+State : (4) + N
+- Current Block: (4)
+	-Type
+	-Horz Location
+	-Vert Location
+	-Rotation State
+- Height of each column : N
+= 4 + N input Nodes --> (hidden) --> 4 output nodes(for action)
+#Actions : 4
+#- left/right/up
+#- rotation
+#- drop (straight to ground)
+ .. or Actions : 2 ( Horz Loc & Orientation)
+ .. depends on implementation
+Cost/Reward :
+ - # of blocks dropped
+ - # of lines cleared
+ - # of currently empty lines.
+
+ - Agent-Based, Genetically Sampled Q-Learning?
+
+Q(S,A) = ... (input to network... output action)
+With ANN, there is no "CACHE" of states,
+which means that it must be agent-based
+with concurrent evaluation of rewards.
+
+Agent :
+ - State
+ - Available Actions
+ - Chooses Actions based on Q-Values
