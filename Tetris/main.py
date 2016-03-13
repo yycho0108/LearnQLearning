@@ -11,8 +11,8 @@ import pickle
 
 from matplotlib import pyplot as plt
 
-ALPHA = 0.4
-GAMMA = 0.3
+ALPHA = 0.6
+GAMMA = 0.4
 
 W = 8
 H = 20
@@ -39,18 +39,21 @@ class TetrisState(State):
             self.reward = 0.0
         else:
             self.board = prev.board + prev.block
-            self.block = prev.nextBlock
+            self.block = copy.deepcopy(prev.nextBlock)
             var = np.var(self.board.summary())
-            self.reward = (.71*self.spaceEmpty() + .86*self.lineClear() - .2*var) * scaleFactor #prev.reward + self.getReward()
+            #default 1, extra points for empty spaces & line-clears, minus points for too much variance(height difference)
+            self.reward = (1 + .71*self.spaceEmpty() + .86*self.lineClear() - .2*var) * scaleFactor
             #print(self.reward)
         self.nextBlock = Block()
 
     def getActions(self):
         return self.block.valid()
     def next(self,a):
+        self.block.i = 0
         self.block.r = a.rot
         self.block.j = a.loc
-        return TetrisState(self)
+        return TetrisState(prev=self)
+
     def spaceEmpty(self): #first-pass reward model with Immediate Reward
             return (self.board.h - max(self.board.summary())) # lower height = better.
     def summary(self,axis=None):
@@ -71,7 +74,7 @@ class TetrisState(State):
             c = self.board.check()
             #if c != 0:
             #    print ("########JACKPOT!!#########")
-            return 1 + 5*c 
+            return 5*c 
     def done(self):
         return self.board.over
     def draw(self,screen):
@@ -109,10 +112,10 @@ class TetrisAgent(Agent):
         #1 for block, 1 for nextblock, 2 for action(loc/rot of block)
         #8 for each height in board width, outputing 1 Q-value
         I = len(TetrisState(shape=shape).summary(0) + TetrisAction(0,0).summary(0)) 
-        print(I)
+        #print(I)
         t = [I,I/2,I/2,1]
         self.net = Net(t)
-        print(self.net.W)
+        #print(self.net.W)
     def chooseBest(self):
         actions = self.state.getActions()
         s = None
@@ -129,7 +132,16 @@ class TetrisAgent(Agent):
                 #print("S",_s)
                 _a = TetrisAction(r,l)# l now migrated into state-summary
                 #print("A",_a)
-                _q = self.net.FF(_s+_a.summary(l))
+                #print(self.state)
+                ns = self.state.next(_a) #next-state
+                #print(self.state)
+
+                if ns.done():
+                    _q = ns.reward
+                else:
+                    _q = self.net.FF(_s+_a.summary(l))
+                    #print(_q)
+
                 #print(_s)
                 #print(_q)
                 #qList += [(_s,_q)]
@@ -152,7 +164,7 @@ class TetrisAgent(Agent):
         return s, a, self.net.FF(s+a.summary(l)) 
 
     def chooseNext(self): #choose "best next state"
-        if np.random.random()<0.3:
+        if np.random.random()<0.1:
             return self.chooseRand()
         else:
             return self.chooseBest()
@@ -187,7 +199,7 @@ class TetrisAgent(Agent):
         return epoch 
 
 if __name__ == "__main__":
-    w,h = 10,20
+    w,h = 6,30
     pygame.init()
     screen = pygame.display.set_mode((w*50,h*50))
     pygame.display.set_caption('Tetris_AI')
@@ -203,8 +215,8 @@ if __name__ == "__main__":
         scores += [score]
         print("[{}] SCORE : {}".format(i,score))
         #raw_input("...")
-    raw_input("...")
-    agent.run(screen,500)
+    #raw_input("...")
+    print("Final SCORE : {}".format(agent.run(screen,500)))
     with open('agent','w') as f:
         pickle.dump(agent,f)
 

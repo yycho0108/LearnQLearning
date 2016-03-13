@@ -106,8 +106,8 @@ class Block:
         #print(left,right)
         #return left,right
     def summary(self):
-        #return [(1.0 if i == self.t else 0.0) for i in range(7)]
-        return [self.t/7.0]
+        return [(1.0 if i == self.t else 0.0) for i in range(7)]
+        #return [self.t/7.0]
 
 class Board:
     def __init__(self,w,h):

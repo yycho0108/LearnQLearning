@@ -53,7 +53,7 @@ class Net:
         for l in t:
             self.L.append(Layer(l))
         for i in range(1,self.length):
-            self.W.append(np.random.randn(t[i-1],t[i]))
+            self.W.append(np.random.random((t[i-1],t[i])))
     def FF(self,X):
         #print(X)
         X = np.atleast_2d(X)
