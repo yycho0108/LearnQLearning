@@ -11,6 +11,9 @@ import pickle
 
 from matplotlib import pyplot as plt
 
+import signal
+import sys
+
 ALPHA = 0.6
 GAMMA = 0.4
 
@@ -204,12 +207,27 @@ class TetrisAgent(Agent):
             #raw_input("...")
         return epoch 
 
-if __name__ == "__main__":
+
+agent = None
+
+def handler(signum,frame):
+    print("TERMINATE...")
+    save = raw_input("SAVE? (Y/N)")
+    if save == "Y":
+        with open('agent','w') as f:
+            pickle.dump(agent,f)
+    sys.exit(0)
+
+signal.signal(signal.SIGINT,handler) # register SIGINT handler
+
+
+def main():
     if(DISPLAY_SCREEN):
         pygame.init()
         screen = pygame.display.set_mode((w*50,h*50))
         pygame.display.set_caption('Tetris_AI')
     w,h = 10,20
+    global agent
     agent = TetrisAgent((w,h))
     #with open('agent','r') as f:
     #    agent = pickle.load(f)
@@ -223,13 +241,17 @@ if __name__ == "__main__":
     #    print("[{}] SCORE : {}".format(i,score))
     
     
-    for i in range(100):
+    for i in range(10000):
         agent.run()
+        print(i)
     print("Final SCORE : {}".format(agent.run()))
 
     with open('agent','w') as f:
         pickle.dump(agent,f)
-
     #plt.plot(scores)
     plt.show()
+
+if __name__ == "__main__":
+    main()
+
 
