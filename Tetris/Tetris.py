@@ -35,17 +35,28 @@ B = [
  [0,0,0,0,0,0,0,0,1,1,1,0,0,1,0,0],[0,0,0,0,0,1,0,0,1,1,0,0,0,1,0,0]]
 ];
 
+Bbits = []
+
+def toBits(arr):
+    res = int(0)
+    for k in arr:
+        res <<= 1
+        res += k
+    return res
+
+Bbits = [[toBits(r) for r in t] for t in B]
+
 B = np.reshape(B,(7,4,4,4))
 
 def findRange():
     br = []
-    for t in range(7):#type
+    for t in xrange(7):#type
         br.append([])
-        for r in range(4): #rotation
+        for r in xrange(4): #rotation
             br[t].append([])
             block = B[t][r]
             Z = []
-            for col in range(4):
+            for col in xrange(4):
                 Z += [np.count_nonzero(block[:,col])]
 
             i = 0
@@ -61,7 +72,6 @@ def findRange():
     return br
 BRange = findRange()
 
-
 class Block:
     def __init__(self):
         self.i = 0 #location
@@ -69,14 +79,16 @@ class Block:
 
         self.r = random.randint(0,3) #rotation state
         self.t = random.randint(0,6) #block type
+    def bits(self):
+        return Bbits[self.t][self.r]
 
     def draw(self,screen):
         pass
         #Not really necessary, since it wouldn't be drawn anyways
         #t = self.t
         #r = self.r
-        #for i in range(4):
-        #    for j in range(4):
+        #for i in xrange(4):
+        #    for j in xrange(4):
         #        if(B[t][r][i][j] == 1):
         #            pygame.draw.rect(screen,BColor[t],
     def __getitem__(self,i):
@@ -90,7 +102,7 @@ class Block:
         #r = self.r
         #M = B[t][r]
         #Z = []
-        #for i in range(4):
+        #for i in xrange(4):
         #    Z += [np.count_nonzero(M[:,i])]
         #left = 0
         #right = w
@@ -106,7 +118,7 @@ class Block:
         #print(left,right)
         #return left,right
     def summary(self):
-        return [(1.0 if i == self.t else 0.0) for i in range(7)]
+        return [(1.0 if i == self.t else 0.0) for i in xrange(7)]
         #return [self.t/7.0]
 
 class Board:
@@ -122,15 +134,15 @@ class Board:
         bw = screen.get_width()/self.w
         bh = screen.get_height()/self.h
         
-        for i in range(self.h):
-            for j in range(self.w):
+        for i in xrange(self.h):
+            for j in xrange(self.w):
                 if self.board[i][j]:
                     pygame.draw.rect(screen,BLACK,(j*bw,i*bh,bw,bh))
     def check(self):
         row = []
-        for i in range(self.h):
+        for i in xrange(self.h):
             if np.count_nonzero(self.board[i]) != self.w:# notfilled
-                    row += [i]
+                row += [i]
         tmp = np.zeros((self.h-len(row),self.w))
 
         if len(row) != self.h: #there is a filled row
@@ -138,13 +150,27 @@ class Board:
         return self.h - len(row)
 
     def hit(self,block):
-        for i in range(4):
-            for j in range(4):
-                if block[i][j] == 1 and (block.i+i >= self.h or self.board[block.i+i][block.j+j] == 1):
+        #boardBits = self.board[max(block.i,0):block.i+4,max(block.j,0):block.j+4].astype(int)
+        #padding = ((max(0,0-block.i),max(0,block.i+4-self.h)),(max(0,0-block.j),max(0,block.j+4-self.w)))
+        #boardBits = np.pad(boardBits,padding,mode='constant',constant_values=1)
+        #boardBits = toBits(np.reshape(boardBits,(16,)))
+
+        #if boardBits & block.bits():
+        #    return True
+        #else:
+        #    return False
+        bi = block.i
+        bj = block.j
+        b = B[block.t][block.r]
+
+        for i in xrange(4):
+            for j in xrange(4):
+                if b[i][j] == 1 and (bi+i >= self.h or self.board[bi+i][bj+j] == 1):
                     return True
         return False
 
     def __iadd__(self,block):
+        block.i = 0
         while not self.hit(block):
             block.i += 1
         
@@ -152,8 +178,8 @@ class Board:
         if block.i < 0:
             self.over = True
         else:
-            for i in range(4):
-                for j in range(4):
+            for i in xrange(4):
+                for j in xrange(4):
                     if block[i][j] == 1:
                         self.board[block.i+i][block.j+j] = 1
         #self.check()
@@ -163,23 +189,23 @@ class Board:
         new += block
         return new
     def getHighest(self,col):
-        for i in range(self.h):
+        for i in xrange(self.h):
             if self.board[i][col] != 0:
                 return self.h-i
         return 0
     def summary(self,axis=0):
         if axis == None:
-            return [self.getHighest(j) for j in range(self.w)]
+            return [self.getHighest(j) for j in xrange(self.w)]
         else:
             l = max(axis,0)
             r = min(axis+4,self.w)
             #print(l,r)
-            res = [self.getHighest(j) for j in range(l,r)]
+            res = [self.getHighest(j) for j in xrange(l,r)]
 
             if axis < 0:
-                res = [self.h for _ in range(abs(axis))] + res
+                res = [self.h for _ in xrange(abs(axis))] + res
             elif axis+4 > self.w:
-                res = res + [self.h for _ in range(abs(axis+4-self.w))]
+                res = res + [self.h for _ in xrange(abs(axis+4-self.w))]
             #print(res)
             return res
 

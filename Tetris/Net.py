@@ -69,7 +69,7 @@ class Net:
         #print("Y:",Y)
         
         G = Y - self.FF(X) #ERROR Gradient : differentiated result of 0.5*(Y-X)^2
-        self.L[-1].G = G * sigmoidPrime(self.L[-1].O)
+        self.L[-1].G = G# * sigmoidPrime(self.L[-1].O)
         #calc Gradient
         for i in reversed(range(1,self.length-1)):
             self.L[i].G = np.dot(self.L[i+1].G,self.W[i].T) * sigmoidPrime(self.L[i].I)
