@@ -20,7 +20,7 @@ GAMMA = 0.4
 W = 8
 H = 20
 
-DISPLAY_SCREEN = False
+DISPLAY_SCREEN = True
 
 
 class State:
@@ -209,46 +209,47 @@ class TetrisAgent(Agent):
 
 
 agent = None
+def askSave():
+    save = raw_input("SAVE? (Y/N)")
+    if save == "Y" or save == "y":
+        with open('agent','w') as f:
+            pickle.dump(agent,f)
 
 def handler(signum,frame):
     print("TERMINATE...")
-    save = raw_input("SAVE? (Y/N)")
-    if save == "Y":
-        with open('agent','w') as f:
-            pickle.dump(agent,f)
+    askSave()
     sys.exit(0)
 
 signal.signal(signal.SIGINT,handler) # register SIGINT handler
 
 
 def main():
+    w,h = 10,20
     if(DISPLAY_SCREEN):
         pygame.init()
         screen = pygame.display.set_mode((w*50,h*50))
         pygame.display.set_caption('Tetris_AI')
-    w,h = 10,20
     global agent
-    agent = TetrisAgent((w,h))
-    #with open('agent','r') as f:
-    #    agent = pickle.load(f)
+    #agent = TetrisAgent((w,h))
+    with open('agent','r') as f:
+        agent = pickle.load(f)
     
-    #scores = []
-    #for i in range(100):
-    #    score = agent.run()
-    #    if score == -1:
-    #        break
-    #    scores += [score]
-    #    print("[{}] SCORE : {}".format(i,score))
+    scores = []
+    for i in range(100):
+        score = agent.run(screen)
+        if score == -1:
+            break
+        scores += [score]
+        print("[{}] SCORE : {}".format(i,score))
     
     
-    for i in range(10000):
-        agent.run()
-        print(i)
+    #for i in range(10000):
+    #    agent.run()
+    #    print(i)
     print("Final SCORE : {}".format(agent.run()))
 
-    with open('agent','w') as f:
-        pickle.dump(agent,f)
-    #plt.plot(scores)
+    askSave()
+    plt.plot(scores)
     plt.show()
 
 if __name__ == "__main__":
