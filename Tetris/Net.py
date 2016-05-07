@@ -49,17 +49,19 @@ class Net:
     def __init__(self,t):
         self.W = [] #weight matrices
         self.L = [] #Layers
+        self.B = [] #Biases
         self.length = len(t)
         for l in t:
             self.L.append(Layer(l))
         for i in range(1,self.length):
-            self.W.append(np.random.random((t[i-1],t[i])))
+            self.W.append(np.random.randn(t[i-1],t[i]))
+            self.B.append(np.random.randn(1,t[i]))
     def FF(self,X):
         #print(X)
         X = np.atleast_2d(X)
         self.L[0].O = X
         for i in range(1,self.length):
-            self.L[i].I = np.dot(self.L[i-1].O,self.W[i-1])
+            self.L[i].I = np.dot(self.L[i-1].O,self.W[i-1]) + self.B[i-1]
             self.L[i].O = sigmoid(self.L[i].I)
         return self.L[-1].O
     def BP(self,X,Y):
@@ -75,14 +77,15 @@ class Net:
             self.L[i].G = np.dot(self.L[i+1].G,self.W[i].T) * sigmoidPrime(self.L[i].I)
         for i in range(1,self.length):
             dW = np.dot(self.L[i-1].O.T,self.L[i].G)
-            self.W[i-1] += 0.3 * dW 
+            self.W[i-1] += 0.6 * dW 
+            self.B[i-1] += 0.6 * self.L[i].G
         return 0.5 * np.sum(G*G)
 
 def main():
     t = [2,4,1]
     net = Net(t)
     G = []
-    for i in range(9999):
+    for i in range(1000):
         I,O = GEN()
         G.append(net.BP(I,O))
     I,O = GEN()

@@ -20,7 +20,7 @@ GAMMA = 0.4
 W = 8
 H = 20
 
-DISPLAY_SCREEN = True
+DISPLAY_SCREEN = False 
 
 
 class State:
@@ -48,7 +48,11 @@ class TetrisState(State):
             self.block = prev.nextBlock 
             var = np.var(self.board.summary())
             #default 1, extra points for empty spaces & line-clears, minus points for too much variance(height difference)
-            self.reward = (1 + .71*self.spaceEmpty() + .86*self.lineClear() - .2*var) * scaleFactor
+            
+            se = self.spaceEmpty()
+            lc = self.lineClear()
+
+            self.reward = (1 + .9*se + .86*lc - .2*var) * scaleFactor
             #print(self.reward)
             #self.reward = (1 + self.lineClear()) * 0.1
             #print(self.reward)
@@ -230,13 +234,13 @@ def main():
         screen = pygame.display.set_mode((w*50,h*50))
         pygame.display.set_caption('Tetris_AI')
     global agent
-    #agent = TetrisAgent((w,h))
-    with open('agent','r') as f:
-        agent = pickle.load(f)
+    agent = TetrisAgent((w,h))
+    #with open('agent','r') as f:
+    #    agent = pickle.load(f)
     
     scores = []
-    for i in range(100):
-        score = agent.run(screen)
+    for i in range(1000):
+        score = agent.run()
         if score == -1:
             break
         scores += [score]
