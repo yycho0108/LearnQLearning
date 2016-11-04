@@ -26,7 +26,7 @@ private:
 	int max_epoch;
 public:
 	GameManager(std::string who, int max_epoch)
-		:who(who),ai(1000,0.95,0.1),max_epoch(max_epoch){
+		:who(who),ai(1,0.3,0.05),max_epoch(max_epoch){
 			//mSize = 1000, gamma=0.8, min_epsilon=0.05
 
 		srand(time(0));
@@ -58,6 +58,7 @@ public:
 			return AIread(dir);
 	}
 	bool KBread(DIR& dir){
+			
 		dir = X;
 		ssize_t bytes = read(kb,&ev,sizeof(ev));
 		
@@ -113,7 +114,8 @@ public:
 
 		epoch = 0;
 
-		double alpha = 0.1; //=learning rate
+		double base_alpha = 1.0;
+		double alpha = base_alpha; //=learning rate
 		double maxR = 256.0;
 
 		//std::vector<DIR> dirs;
@@ -122,8 +124,8 @@ public:
 		std::ofstream ferr("loss.csv");
 		std::ofstream ftest("test.csv");
 		//got rid of maxR because it casts doubts
-		int u_freq = 10;
-		int n_update = 50;
+		int u_freq = 1;
+		int n_update = 1;
 		int step = 0;
 
 		while(CMDread(dir) && epoch < max_epoch){ //select action
@@ -135,6 +137,8 @@ public:
 			//UPDATE Q-Value
 			
 			Board<n,m> S(board);//"previous state"
+			
+			
 			//auto N = board.speculate(dir); //next state without random tiles
 			//auto S = board.cVec();//"previous state"
 
@@ -144,8 +148,8 @@ public:
 			r = log(r+1) / 7.625;
 			//r /= 2048.0;
 
-			r += float(board.getEmpty()) / (n*m);
-			r /= 2;
+			//r += float(board.getEmpty()) / (n*m);
+			//r /= 2;
 			//namedPrint(r);
 			//if(r>0)
 			//	r = log(r+1) / 7.624; //7.625 = log(2048)
@@ -174,7 +178,7 @@ public:
 
 				++epoch;
 				//terminal state
-				alpha = 1.0 - tanh(2*float(epoch) / max_epoch); // = learning rate
+				alpha = base_alpha * (1.0 - tanh(2*float(epoch) / max_epoch)); // = learning rate
 				//namedPrint(alpha);
 				ai.memorize(S,dir,-1.0,board); //-1 for terminal state
 
@@ -197,7 +201,7 @@ public:
 			}
 			++step;
 			if((step >= n_update) && (step % u_freq == 0)){
-				ferr << ai.learn_bundle(alpha, n_update)/(alpha*alpha) << endl;
+				ferr << ai.learn_bundle(alpha, n_update) << endl;
 			}
 
 		}

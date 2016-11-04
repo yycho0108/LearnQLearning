@@ -57,7 +57,7 @@ template<int n, int m, typename T = double> //double/float = cannot use table, m
 class Agent{
 	using A_Memory = Memory<n,m,T>;
 	using A_Board = Board<n,m>;
-	static const int H = 4*log2(ppow(10,n*m));
+	static const int H = log2(ppow(10,n*m))/2;
 private:
 	ConvNet net;
 	double gamma; // gamma = reduction to future /ewards
@@ -213,7 +213,7 @@ public:
 		const DIR a = memory.a;
 		const double r = memory.r;
 		auto s = process(memory.s);
-		namedPrint(s);
+		//namedPrint(s);
 		//auto& s = memory.s.vec(); 
 
 		auto maxqn = getMax(memory.s_n);
@@ -230,7 +230,10 @@ public:
 		}
 		//auto oldy = y;
 		//namedPrint(oldy);
-		y.at<float>((int)a) = (1-alpha)*(y.at<float>((int)a)) + (alpha)*(r+gamma*maxqn);
+		double old_q = y.at<float>((int)a);
+		double new_q = r + gamma*maxqn;
+
+		y.at<float>((int)a) = (1-alpha)*old_q + (alpha)*new_q;
 
 		//std::cout << "<[[" <<std::endl;
 		
@@ -248,17 +251,17 @@ public:
 			namedPrint(y);
 		}
 
-		return net.error();
+		return 0.5 * (new_q - old_q) * (new_q - old_q);
 	}
 	double learn_bundle(double alpha){
-		//static std::random_device rd;
-		//static std::mt19937 eng(rd());
-		//static std::uniform_int_distribution<int> distr(0,mSize);
+		static std::random_device rd;
+		static std::mt19937 eng(rd());
+		static std::uniform_int_distribution<int> distr(0,mSize);
 		double sum = 0;
 		for(int i=0;i<rSize;++i){
 			//potentially replace with distinct random numbers
-			//learn(memories[distr(eng)], alpha);
-			sum += learn(memories[rand()%mSize],alpha);
+			sum += learn(memories[distr(eng)], alpha);
+			//sum += learn(memories[rand()%mSize],alpha);
 		}
 		return sum/rSize;
 	}
